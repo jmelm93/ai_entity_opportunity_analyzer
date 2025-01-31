@@ -1,5 +1,33 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional
+from utils import create_excel_report
+
+### START: ENTITY SELECTION MODEL ###
+
+class EntitySelection(BaseModel):
+    """Entity name with reasoning behind the selection and score of how relevant it is for the client page."""
+    entity_name: str = Field(name="entity_name", description="The name of the entity.")
+    entity_type: str = Field(name="entity_type", description="The type of the entity.")
+    relevance_score: float = Field(name="relevance_score", description="The relevance score of the entity for the client page (0-1).")
+    reasoning: str = Field(name="reasoning", description="The reasoning behind the selection of the entity.")
+    competitors: List[str] = Field(name="competitors", description="List of competitors where the entity was found.")
+
+class EntitySelections(BaseModel):
+    """List of entity selections."""
+    selected_entities: List[EntitySelection] = Field(name="selected_entities", description="List of selected entities with relevance scores and reasoning.")
+    
+    @property
+    def to_markdown(self) -> str:
+        """Convert the entity selections to a markdown string."""
+        markdown = ""
+        for entity in self.selected_entities:
+            markdown += f"- **{entity.entity_name}**\n"
+            markdown += f"  - **Relevance Score:** {entity.relevance_score}\n"
+            markdown += f"  - **Reasoning:** {entity.reasoning}\n"
+            markdown += f"  - **Competitors:** {', '.join(entity.competitors)}\n\n"
+        return markdown
+    
+### END: ENTITY SELECTION MODEL ###
 
 
 ### START: ENTITY RECOMMENDATION MODEL ###
@@ -30,7 +58,7 @@ class IntegrationOpportunity(BaseModel):
     placement: str = Field(name="placement", description="Suggested placement of the entity in key areas like the title tag, meta description, and headings.")
     explanation: str = Field(name="explanation", description="Explanation of why each recommendation is beneficial for SEO and user experience.")
 
-class EntityRecommendation(BaseModel):
+class EntityRecommendations(BaseModel):
     """Structured recommendation for integrating an entity."""
     
     entity_context: MissingItem = Field(name="entity_context", description="Context about the entity and its competitors.")
@@ -39,7 +67,7 @@ class EntityRecommendation(BaseModel):
     @property
     def to_markdown(self) -> str:
         """Convert the entity recommendation to a markdown string."""
-        markdown = f"### {self.entity_context.entity_name} Integration Opportunities\n\n"
+        markdown = f"### Entity Target: '{self.entity_context.entity_name.title()}'\n\n"
         for i, op in enumerate(self.integration_opportunities, start=1):
             markdown += f"#### Opportunity {i}: {op.section}\n\n"
             markdown += f"**Recommendation:** {op.recommendation}\n\n"
@@ -54,27 +82,45 @@ class EntityRecommendation(BaseModel):
     
 ### END: ENTITY RECOMMENDATION MODEL ###
 
-### START: ENTITY SELECTION MODEL ###
 
-class EntitySelection(BaseModel):
-    """Entity name with reasoning behind the selection and score of how relevant it is for the client page."""
-    entity_name: str = Field(name="entity_name", description="The name of the entity.")
-    entity_type: str = Field(name="entity_type", description="The type of the entity.")
-    relevance_score: float = Field(name="relevance_score", description="The relevance score of the entity for the client page (0-1).")
-    reasoning: str = Field(name="reasoning", description="The reasoning behind the selection of the entity.")
+### CONSOLIDATED DATA MODEL ###
 
-class EntitySelections(BaseModel):
-    """List of entity selections."""
-    selected_entities: List[EntitySelection] = Field(name="selected_entities", description="List of selected entities with relevance scores and reasoning.")
+class FinalState(BaseModel):
+    """Represents the state of the analysis process."""
+    client_url: str = Field(name="client_url", description="The URL of the client's page.")
+    competitor_urls: List[str] = Field(name="competitor_urls", description="List of competitor URLs.")
+    analysis_results: List[dict] = Field(name="analysis_results", description="Results of the content analysis including the client and competitor entities and keywords.")
+    comparison_results: dict = Field(name="comparison_results", description="Comparison results between the client and competitors.")
+    selected_entities: EntitySelections = Field(name="selected_entities", description="List of selected entities with relevance scores and reasoning.")
+    recommendation_overview: List[EntityRecommendations] = Field(name="recommendation_overview", description="Structured recommendation for integrating entities.")
+    
     
     @property
     def to_markdown(self) -> str:
-        """Convert the entity selections to a markdown string."""
-        markdown = "### Selected Entities for Integration\n\n"
-        for entity in self.selected_entities:
-            markdown += f"- **{entity.entity_name}**\n"
-            markdown += f"  - **Relevance Score:** {entity.relevance_score}\n"
-            markdown += f"  - **Reasoning:** {entity.reasoning}\n\n"
+        """Create a markdown report from the analysis results."""
+        markdown = f"# Content Analysis Report\n\n"
+        markdown += f"**Client Page:** {self.client_url}\n\n"
+        markdown += "**Competitor Pages:**\n\n"
+        for url in self.competitor_urls:
+            markdown += f"- {url}\n"
+        markdown += "\n"
+        markdown += "\n"
+        markdown += "## Selected Entities for Integration\n\n"
+        markdown += self.selected_entities.to_markdown
+        markdown += "\n"
+        markdown += "## Entity Recommendations\n\n"
+        for rec in self.recommendation_overview:
+            markdown += rec.to_markdown
         return markdown
     
-### END: ENTITY SELECTION MODEL ###
+    @property
+    def to_excel(self) -> bytes:
+        """Create an Excel report from the analysis results."""
+        return create_excel_report({
+            "client_url": self.client_url,
+            "competitor_urls": self.competitor_urls,
+            "analysis_results": self.analysis_results,
+            "comparison_results": self.comparison_results
+        })
+
+

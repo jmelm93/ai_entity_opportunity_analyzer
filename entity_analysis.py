@@ -9,7 +9,7 @@ from typing import List, Set, Dict, Any
 from langchain_openai import ChatOpenAI
 import aiohttp
 from aiohttp import ClientSession
-from data_models import EntityRecommendation, EntitySelection, EntitySelections
+from data_models import EntityRecommendations, EntitySelection, EntitySelections
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -203,7 +203,7 @@ def compare_pages(client_analysis, competitive_analyses, competitive_pages):
     }
 
 
-async def generate_entity_recommendations(entity_item: EntitySelection, client_content: str) -> EntityRecommendation:
+async def generate_entity_recommendations(entity_item: EntitySelection, client_content: str) -> EntityRecommendations:
     """Generates structured recommendations for integrating a target entity."""
     instructions = """
     You are an expert SEO content strategist. Your task is to analyze a client's webpage content and provide specific, actionable recommendations on how to integrate a target entity effectively.
@@ -251,7 +251,7 @@ async def generate_entity_recommendations(entity_item: EntitySelection, client_c
         ("system", "Provide a structured recommendation for integrating the target entity."), 
         ("user", prompt)
     ]
-    structured_recommendation_model = model.with_structured_output(EntityRecommendation)
+    structured_recommendation_model = model.with_structured_output(EntityRecommendations)
     output = await structured_recommendation_model.ainvoke(inputs_for_recommendation)
     logger.info(f'EntityRecommendation: \n\n {output}')
     return  output
@@ -263,8 +263,8 @@ async def select_entities_for_integration(missing_entities: Dict[str, Any]) -> E
         return EntitySelections(selected_entities=[])
 
     # get array of objects with these keys {"entity_name", "entity_type", "count_of_competitors_with_entity, "max_salience"}
-    entities = [{"entity_name": entity_name, "entity_type": data["type"], "count_of_competitors_with_entity": len(data["competitors"]), "max_salience": max([comp["salience"] for comp in data["competitors"].values()])} for entity_name, data in missing_entities.items()]
-    structured_string_of_entities = "\n".join([f"- Entity Name: {entity['entity_name']}, Entity Type: {entity['entity_type']}, Count of Competitors with Entity: {entity['count_of_competitors_with_entity']}, Max Salience: {entity['max_salience']}\n\n" for entity in entities])
+    entities = [{"entity_name": entity_name, "entity_type": data["type"], "count_of_competitors_with_entity": len(data["competitors"]), "max_salience": max([comp["salience"] for comp in data["competitors"].values()]), "competitors": list(data["competitors"].keys())} for entity_name, data in missing_entities.items()]
+    structured_string_of_entities = "\n".join([f"- Entity Name: {entity['entity_name']}, Entity Type: {entity['entity_type']}, Count of Competitors with Entity: {entity['count_of_competitors_with_entity']}, Max Salience: {entity['max_salience']}, Competitors: {entity['competitors']}" for entity in entities])
     
     prompt = """
     You are an expert SEO content strategist. Your task is to analyze a list of missing entities and select the top 10 most relevant entities to integrate into a client's webpage.
