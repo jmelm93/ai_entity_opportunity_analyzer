@@ -110,7 +110,7 @@ async def main_analysis(client_url: str, competitor_urls: List[str], credentials
 
 if __name__ == "__main__":
     urls = {
-        "client_url": "https://turbotax.intuit.com/tax-tips/jobs-and-career/how-bonuses-are-taxed/L7UjtAZbh",
+        "client_url": "https://www.nerdwallet.com/article/taxes/bonus-tax-rate-how-are-bonuses-taxed",
         "competitor_urls": [
             "https://www.fidelity.com/learning-center/smart-money/bonus-tax-rate",
             "https://www.oysterhr.com/library/how-are-bonuses-taxed",
