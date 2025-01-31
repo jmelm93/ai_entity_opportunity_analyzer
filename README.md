@@ -19,7 +19,7 @@ This Python application, `ai_entity_opportunity_analyzer`, is designed to analyz
 - `main.py`: Contains the main logic for running the analysis, generating reports, and handling inputs and errors.
 - `utils.py`: Contains utility functions for creating Excel reports and handling competitor names.
 - `data_models.py`: Contains Pydantic data models for structuring the data used in the application.
-- `service_account.json`: This file contains the API Key for Google Cloud Natural Language API. (Not included in repo)
+- `service_account.json`: This file contains the service account json credentials for GCP (Google Cloud Platform) that will need to have Google Cloud Natural Language API activated.
 - `.env`: This file contains the API Key for OpenAI. (Not included in repo)
 
 ## Setup
